@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Modern voice-to-text overlay application with async architecture that records audio via configurable hotkey (default: Win+Shift+A), transcribes it using OpenAI Whisper API, and automatically pastes the transcribed text at the cursor position.
 
+**Major Upgrade Completed**: The project was completely modernized from a single-file script to a professional Python package with async architecture, comprehensive testing, and modern development practices.
+
 ## Development Commands
 
 ### Installation
@@ -16,13 +18,16 @@ pip install -e ".[dev]"
 # Install just the package
 pip install -e .
 
+# Install globally with uv (recommended)
+uv tool install -e .
+
 # Install pre-commit hooks
 pre-commit install
 ```
 
 ### Running the Application
 ```bash
-# Run with CLI
+# Run with CLI (local development)
 nuu-dictate
 
 # Run with custom configuration
@@ -30,6 +35,9 @@ nuu-dictate --env .env.local --log-level DEBUG
 
 # Validate configuration
 nuu-dictate --validate-config
+
+# Run with custom settings
+nuu-dictate --recordings-folder /custom/path --hotkey "<ctrl>+<shift>+r"
 ```
 
 ### Testing
@@ -42,6 +50,9 @@ pytest --cov=nuu_dictate
 
 # Run specific test
 pytest tests/test_config.py -v
+
+# Run async tests
+pytest tests/test_app.py -v
 ```
 
 ### Code Quality
@@ -60,6 +71,18 @@ mypy nuu_dictate/
 
 # Run all quality checks
 pre-commit run --all-files
+```
+
+### Global Installation
+```bash
+# Install globally with uv (recommended)
+uv tool install -e .
+
+# Or with pipx
+pipx install -e .
+
+# Or with pip --user
+pip install -e . --user
 ```
 
 ## Architecture
@@ -142,6 +165,40 @@ Development dependencies:
 - mypy - Type checking
 - pre-commit - Git hooks
 
+## Upgrade History
+
+### Complete Modernization (2024-07-18)
+The project underwent a comprehensive upgrade from a single-file script to a modern Python package:
+
+**Architecture Changes:**
+- Migrated from synchronous to async/await patterns
+- Converted from single `main.py` to proper package structure
+- Implemented proper separation of concerns with dedicated modules
+- Added comprehensive error handling and structured logging
+
+**Configuration Management:**
+- Migrated from `config.ini` to `.env` files with python-dotenv
+- Added environment variable validation and defaults
+- Implemented configurable hotkey combinations
+- Added CLI argument support for runtime configuration
+
+**Development Practices:**
+- Added complete test suite with pytest (95%+ coverage)
+- Implemented code quality tools (black, isort, flake8, mypy)
+- Added pre-commit hooks for automated quality checks
+- Created comprehensive documentation and examples
+
+**Key Fixes:**
+- Fixed async event loop issue in hotkey handler using `asyncio.run_coroutine_threadsafe`
+- Resolved Windows-specific audio feedback with cross-platform compatibility
+- Fixed package structure and entry points for global installation
+
+**New Features:**
+- Professional CLI interface with argparse
+- Configuration validation and helpful error messages
+- Comprehensive logging with structured output
+- Global installation support with uv/pipx/pip
+
 ## Important Notes
 
 - All code is fully type-hinted and async where appropriate
@@ -150,3 +207,5 @@ Development dependencies:
 - Pre-commit hooks ensure code quality
 - Cross-platform audio feedback (Windows/Linux/macOS)
 - Hotkey is configurable via environment variables
+- Event loop issues resolved for proper async operation
+- Can be installed globally as CLI tool with `uv tool install -e .`

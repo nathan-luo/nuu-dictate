@@ -10,7 +10,7 @@ import configparser
 import pyperclip
 from pynput import keyboard
 from openai import OpenAI
-
+import pyautogui
 
 class VoiceToTextApp:
     def __init__(self):
@@ -21,7 +21,7 @@ class VoiceToTextApp:
         self.openai_client = None
         
         # Audio settings
-        self.sample_rate = 16000
+        self.sample_rate = 44100
         self.channels = 1
         self.chunk_size = 1024
         self.audio_format = pyaudio.paInt16
@@ -36,6 +36,9 @@ class VoiceToTextApp:
         # Load config
         self.load_config()
         
+        # Print audio device info
+        self.print_audio_device_info()
+        
         # Setup hotkey listener
         self.setup_hotkey_listener()
         
@@ -47,20 +50,38 @@ class VoiceToTextApp:
             config.read(config_file)
             api_key = config.get('openai', 'api_key', fallback=None)
             if api_key:
-                self.openai_client = OpenAI(api_key=api_key)
+                self.openai_client = OpenAI(
+                    base_url="https://audio-turbo.us-virginia-1.direct.fireworks.ai/v1",
+                    api_key=api_key
+                )
         else:
             print("Config file not found. Create config.ini with OpenAI API key.")
+            
+    def print_audio_device_info(self):
+        """Print information about the default audio input device"""
+        try:
+            # Get default input device info
+            default_device = self.audio.get_default_input_device_info()
+            print(f"Using audio input device: {default_device['name']}")
+            print(f"Device index: {default_device['index']}")
+            print(f"Max input channels: {default_device['maxInputChannels']}")
+            print(f"Default sample rate: {default_device['defaultSampleRate']}")
+            print("-" * 50)
+        except Exception as e:
+            print(f"Could not get audio device info: {e}")
             
     def setup_hotkey_listener(self):
         def on_hotkey():
             if self.recording:
+                print(f"Recording stopped at {datetime.now()}")
                 self.stop_recording()
             else:
+                print(f"Recording started at {datetime.now()}")
                 self.start_recording()
         
-        # Win+Shift+V hotkey (Windows: <cmd> = Windows key)
+        # Win+Shift+A hotkey (Windows: <cmd> = Windows key)
         hotkey = keyboard.GlobalHotKeys({
-            '<cmd>+<shift>+v': on_hotkey
+            '<cmd>+<shift>+a': on_hotkey
         })
         
         self.hotkey_listener = hotkey
@@ -148,7 +169,7 @@ class VoiceToTextApp:
             try:
                 with open(wav_path, 'rb') as audio_file:
                     transcript = self.openai_client.audio.transcriptions.create(
-                        model="whisper-1",
+                        model="whisper-v3-turbo",
                         file=audio_file
                     )
                     
@@ -168,7 +189,7 @@ class VoiceToTextApp:
             print("OpenAI client not configured")
             
     def run(self):
-        print("Voice-to-text overlay started. Press Win+Shift+V to record.")
+        print("Voice-to-text overlay started. Press Win+Shift+A to record.")
         print("Press Ctrl+C to exit.")
         
         try:

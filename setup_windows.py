@@ -13,6 +13,7 @@ def install_requirements():
         "pynput>=1.7.6",
         "pyaudio>=0.2.11", 
         "pyautogui>=0.9.54",
+        "pyperclip>=1.8.2",
         "openai>=1.0.0"
     ]
     

@@ -1,23 +1,22 @@
-import tkinter as tk
 import threading
 import time
 import wave
 import pyaudio
 import os
+import winsound
 from datetime import datetime
 from pathlib import Path
 import configparser
-import pyautogui
+import pyperclip
 from pynput import keyboard
 from openai import OpenAI
 
 
-class VoiceToTextOverlay:
+class VoiceToTextApp:
     def __init__(self):
         self.recording = False
         self.audio_frames = []
         self.audio_stream = None
-        self.overlay_window = None
         self.hotkey_listener = None
         self.openai_client = None
         
@@ -67,27 +66,16 @@ class VoiceToTextOverlay:
         self.hotkey_listener = hotkey
         self.hotkey_listener.start()
         
-    def create_overlay(self):
-        self.overlay_window = tk.Tk()
-        self.overlay_window.title("Recording")
-        self.overlay_window.geometry("20x20")
-        self.overlay_window.configure(bg='red')
-        self.overlay_window.attributes('-topmost', True)
-        self.overlay_window.attributes('-alpha', 0.7)
-        self.overlay_window.overrideredirect(True)
-        
-        # Position near cursor (with error handling for Windows)
+    def play_sound(self, sound_type):
+        """Play system sound for recording feedback"""
         try:
-            x, y = pyautogui.position()
-            self.overlay_window.geometry(f"+{x+20}+{y+20}")
+            if sound_type == "start":
+                winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+            elif sound_type == "stop":
+                winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
         except:
-            # Fallback position if cursor position fails
-            self.overlay_window.geometry("+100+100")
-        
-        # Create red dot
-        canvas = tk.Canvas(self.overlay_window, width=20, height=20, bg='red', highlightthickness=0)
-        canvas.pack()
-        canvas.create_oval(2, 2, 18, 18, fill='red', outline='darkred')
+            # Fallback beep if winsound fails
+            print('\a')  # Terminal bell
         
     def start_recording(self):
         if self.recording:
@@ -96,8 +84,8 @@ class VoiceToTextOverlay:
         self.recording = True
         self.audio_frames = []
         
-        # Create overlay
-        self.create_overlay()
+        # Play start sound
+        self.play_sound("start")
         
         # Start audio stream
         self.audio_stream = self.audio.open(
@@ -127,15 +115,13 @@ class VoiceToTextOverlay:
             
         self.recording = False
         
+        # Play stop sound
+        self.play_sound("stop")
+        
         # Stop audio stream
         if self.audio_stream:
             self.audio_stream.stop_stream()
             self.audio_stream.close()
-            
-        # Hide overlay
-        if self.overlay_window:
-            self.overlay_window.destroy()
-            self.overlay_window = None
             
         # Process recording
         if self.audio_frames:
@@ -172,9 +158,9 @@ class VoiceToTextOverlay:
                 with open(txt_path, 'w', encoding='utf-8') as txt_file:
                     txt_file.write(transcription)
                     
-                # Type transcription at cursor (with small delay for Windows)
-                time.sleep(0.1)  # Small delay to ensure focus
-                pyautogui.typewrite(transcription, interval=0.01)
+                # Copy transcription to clipboard and paste
+                pyperclip.copy(transcription)
+                pyautogui.hotkey('ctrl', 'v')  # Paste the transcription
                 
             except Exception as e:
                 print(f"Transcription error: {e}")
@@ -196,13 +182,11 @@ class VoiceToTextOverlay:
             self.hotkey_listener.stop()
         if self.audio_stream:
             self.audio_stream.close()
-        if self.overlay_window:
-            self.overlay_window.destroy()
         self.audio.terminate()
 
 
 def main():
-    app = VoiceToTextOverlay()
+    app = VoiceToTextApp()
     app.run()
 
 
